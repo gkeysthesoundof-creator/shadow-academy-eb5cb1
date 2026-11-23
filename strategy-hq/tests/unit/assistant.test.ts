@@ -69,7 +69,8 @@ describe('assistant LLM layer (no network)', () => {
   it('computes cost micros per model', () => {
     expect(costMicros('claude-opus-5-5', { input_tokens: 1_000_000, output_tokens: 1_000_000 })).toBe(24_000_000);
     expect(costMicros('claude-sonnet-5-5', { input_tokens: 1000, output_tokens: 1000 })).toBe(12_000);
-    expect(costMicros('claude-haiku-5-5', { input_tokens: 1_000_000, output_tokens: 1_000_000 })).toBe(600_000);
+    expect(costMicros('claude-haiku-5-5', { input_tokens: 100_000, output_tokens: 100_000 })).toBe(60_000);       // base tier
+    expect(costMicros('claude-haiku-5-5', { input_tokens: 1_000_000, output_tokens: 1_000_000 })).toBe(3_000_000); // >100K prompt tier
     expect(costMicros('claude-opus-5-5', { input_tokens: 0, output_tokens: 0 })).toBe(0);
   });
 
@@ -78,3 +79,22 @@ describe('assistant LLM layer (no network)', () => {
     expect(keywordQuery('where is the leonida map')).toBe('leonida map');
   });
 });
+
+describe('Haiku 5.5 as the coach model', () => {
+  it('is the default and never sends the server-side fallback (unsupported on Haiku)', async () => {
+    const { config } = await import('@/lib/config');
+    expect(config.assistantModel).toBe('claude-haiku-5-5');
+    let seen: Record<string, unknown> = {};
+    await askLlm({ question: 'q', rows: [], chapter: 1, noVideo: false, model: 'claude-haiku-5-5',
+      create: async (p) => { seen = p as Record<string, unknown>; return { stop_reason: 'end_turn', content: [{ type: 'text', text: 'unknown' }] }; } });
+    expect(seen.model).toBe('claude-haiku-5-5');
+    expect(seen).not.toHaveProperty('fallbacks');
+    expect(seen).not.toHaveProperty('betas');
+    expect(seen).not.toHaveProperty('thinking');
+  });
+  it('prices Haiku correctly, including the long-prompt tier', () => {
+    expect(costMicros('claude-haiku-5-5', { input_tokens: 1500, output_tokens: 400 })).toBe(350);
+    expect(costMicros('claude-haiku-5-5', { input_tokens: 200_000, output_tokens: 0 })).toBe(100_000);
+  });
+});
+

@@ -20,9 +20,15 @@ export const PRICES: Record<string, { in: number; out: number }> = {
   'claude-haiku-5-5': { in: 0.1, out: 0.5 },
 };
 
+export function supportsServerFallback(model: string): boolean {
+  return /^claude-(opus-5|sonnet-5-5|fable-5)/.test(model);
+}
+
 export function costMicros(model: string, usage: { input_tokens?: number | null; output_tokens?: number | null }): number {
   const key = Object.keys(PRICES).find((k) => model.startsWith(k));
-  const p = PRICES[key ?? 'claude-opus-5-5']; // unknown model: bill at the highest known rate
+  let p = PRICES[key ?? 'claude-opus-5-5']; // unknown model: bill at the highest known rate
+  // Haiku 5.5 is priced higher for prompts over 100K tokens ($0.50 / $2.50 per million).
+  if (key === 'claude-haiku-5-5' && (usage.input_tokens ?? 0) > 100_000) p = { in: 0.5, out: 2.5 };
   return Math.ceil((usage.input_tokens ?? 0) * p.in + (usage.output_tokens ?? 0) * p.out);
 }
 
@@ -94,7 +100,9 @@ export async function askLlm(args: {
   let msg: LlmMessage;
   try {
     msg = await args.create({
-      model: args.model, max_tokens: 1024, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default',
+      model: args.model, max_tokens: 1024,
+      // Server-side refusal fallback exists for Opus/Sonnet/Fable, not Haiku: a Haiku refusal falls back to local search.
+      ...(supportsServerFallback(args.model) ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}),
       output_config: { effort: 'low' }, system: SYSTEM_RULES, messages: [{ role: 'user', content: prompt }],
     });
   } catch (e) {

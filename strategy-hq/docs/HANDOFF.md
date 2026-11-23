@@ -36,7 +36,7 @@ Note: the iPhone screenshots are rendered with Chromium at the iPhone 13 viewpor
 | Morning email | Resend account, verified sending domain, `REPORT_*` vars, flag `email_delivery`, opt-in in Settings | Settings → Morning email |
 | Rockstar official watch | Works in code; **this container's network blocks rockstargames.com**, so no live fetch has succeeded yet. Will run once deployed | Source Monitor |
 | Reddit communities | Approved Reddit Data API app + credentials; a **commercial agreement** before any paid launch. Never scraped | `.env`, flag `reddit_ingestion` |
-| AI coach | `ANTHROPIC_API_KEY` + flag `llm_assistant`. Default model Claude Opus 5.5, low effort, $1/day ceiling. `claude-haiku-5-5` is a much cheaper option | `.env` |
+| AI coach | `ANTHROPIC_API_KEY` + flag `llm_assistant`. Model: Claude Haiku 5.5 (your choice), low effort, $1/day ceiling. A refusal falls back to free local search | `.env` |
 | Licensed Leonida map | Rockstar's map is for personal download; embedding/redistribution needs permission. Until then: personal import + text landmarks | Map Room |
 | Gameplay intel | No vehicle/weapon/cash/secret findings exist yet, and none were invented. Add them via Admin → Review & intake (evidence required) or let community sources feed the review queue | Admin |
 | Billing | Choose a provider (e.g. Stripe), set prices, legal review. `billing_live` is locked off | Admin |
@@ -61,9 +61,9 @@ automatically the first time the deployed watcher fetches the official page itse
 
 ## 5. Costs (estimates — confirm current prices before buying anything)
 - Scouts: $0 model spend (deterministic). Hosting/database: free tiers expected at founder scale (unverified).
-- AI coach (optional): Opus 5.5 is ~$4 per million input and $20 per million output tokens. A typical answer
-  of ~1.5k in / 400 out costs about $0.014. The `$1/day` ceiling allows ~70 answers per day across all users,
-  then falls back to free local search.
+- AI coach (optional): Haiku 5.5 is $0.10 per million input and $0.50 per million output tokens (prompts under 100K tokens).
+  A typical answer of ~1.5k in / 400 out costs about $0.00035 — roughly 2,800 answers per $1. The `$1/day` ceiling
+  stays as a safety net; per-plan daily quotas (FREE 5, PLUS 30, PRO 100) apply first.
 - Email: Resend has a free tier (check its current limits). Reddit API commercial pricing: UNKNOWN until you apply.
 
 ## 6. Launch checklist (only your actions remain)

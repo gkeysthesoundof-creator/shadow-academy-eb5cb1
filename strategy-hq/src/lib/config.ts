@@ -33,7 +33,7 @@ export const config = {
   get reportEnabled() { return env('REPORT_ENABLED') === 'true'; },
   // Assistant (Anthropic). Optional; local retrieval fallback otherwise.
   get anthropicApiKey() { return env('ANTHROPIC_API_KEY'); },
-  get assistantModel() { return env('ASSISTANT_MODEL') ?? 'claude-opus-5-5'; },
+  get assistantModel() { return env('ASSISTANT_MODEL') ?? 'claude-haiku-5-5'; },
   get llmDailyBudgetMicros() { return Number(env('LLM_DAILY_BUDGET_USD') ?? '1') * 1_000_000; },
   // Reddit Data API (requires approved app + commercial agreement for paid product).
   get redditClientId() { return env('REDDIT_CLIENT_ID'); },
