@@ -1,0 +1,47 @@
+{
+  "name": "gamescout-hq",
+  "version": "0.2.0",
+  "private": true,
+  "description": "GTA VI Strategy HQ (founder workspace) on the GameScout HQ multi-user platform. Independent, unofficial game guide.",
+  "scripts": {
+    "dev": "next dev -p 3100",
+    "build": "next build",
+    "start": "next start -p 3100",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:down": "tsx scripts/migrate.ts down",
+    "db:seed": "tsx scripts/seed.ts",
+    "founder:create": "tsx scripts/create-founder.ts",
+    "scouts:run": "tsx scripts/run-scouts.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:db": "vitest run tests/db",
+    "test:e2e": "playwright test --trace off",
+    "screenshots": "playwright test e2e/screenshots.spec.ts --trace off"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
+    "next": "^16.4.6",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.6",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^5.1.1"
+  }
+}

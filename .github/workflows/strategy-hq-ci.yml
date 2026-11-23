@@ -1,0 +1,36 @@
+name: strategy-hq CI
+on:
+  push:
+    paths: ['strategy-hq/**', '.github/workflows/strategy-hq-ci.yml']
+  pull_request:
+    paths: ['strategy-hq/**']
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: strategy-hq } }
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: ci-super }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGPASSWORD: ci-super
+      TEST_DATABASE_URL: postgres://gsq_owner:ci-owner@127.0.0.1:5432/gsq_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: strategy-hq/package-lock.json }
+      - run: npm ci
+      - name: Create database + roles
+        run: |
+          psql -h 127.0.0.1 -U postgres -c "create role gsq_owner login password 'ci-owner' createdb" -c "create database gsq_test owner gsq_owner"
+          BOOTSTRAP_SUPERUSER_URL=postgres://postgres:ci-super@127.0.0.1:5432/gsq_test DATABASE_URL=$TEST_DATABASE_URL npx tsx scripts/migrate.ts up
+      - run: npx tsc --noEmit
+      - run: npx eslint .
+      - run: npx vitest run
+      - run: npm run build
+        env: { DATABASE_URL: postgres://gsq_owner:ci-owner@127.0.0.1:5432/gsq_test }

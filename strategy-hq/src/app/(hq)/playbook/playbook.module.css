@@ -1,0 +1,12 @@
+.taskRow { display: flex; gap: 6px; align-items: stretch; }
+.taskRow form:first-child { flex: 1; }
+.taskBtn { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+.taskBtn:focus-visible { outline: 2px solid var(--cyan); outline-offset: 4px; border-radius: 8px; }
+.box { width: 20px; height: 20px; border: 2px solid var(--pink); border-radius: 6px; display: inline-grid; place-items: center; font-size: 13px; flex: none; }
+.mini { min-width: 40px; }
+.cashRow { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.amount { font-variant-numeric: tabular-nums; font-weight: 800; }
+.total { font-size: 26px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.huntLink { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); text-decoration: none; color: inherit; }
+.huntLink:hover .huntTitle { color: var(--pink); }
+.huntTitle { font-weight: 700; }

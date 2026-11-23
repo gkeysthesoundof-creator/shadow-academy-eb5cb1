@@ -1,0 +1,10 @@
+{
+  "name": "GTA VI Strategy HQ",
+  "short_name": "Strategy HQ",
+  "description": "Private, chapter-aware strategy companion. Independent and unofficial.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080b19",
+  "theme_color": "#080b19",
+  "icons": [{ "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
