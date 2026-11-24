@@ -33,7 +33,7 @@ without a migration that preserves the child's existing progress. Losing progres
 Authorized by Gerald. Overrides earlier model-selection instructions in the project kit.
 Full policy: [`docs/studio/MODEL_POLICY.md`](docs/studio/MODEL_POLICY.md).
 
-- **Primary development model:** Fable 5.2 (`claude-fable-5-2`), or the latest Fable on Gerald's account.
+- **Primary development model:** Fable 5.2, or the latest Fable on Gerald's account.
 - **Default thinking effort** for architecture and major development: **High**.
 - **Studio Director:** Fable.
 - **Fable:** complex engineering, gameplay implementation, creative craftsmanship,

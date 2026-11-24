@@ -8,13 +8,13 @@ Scope: this repository only.
 
 | Work type | Model | Effort |
 |---|---|---|
-| Studio direction, architecture, major development | Fable 5.2 (`claude-fable-5-2`) or latest Fable | High |
+| Studio direction, architecture, major development | Fable 5.2 or latest Fable | High |
 | Gameplay implementation, educational systems, creative craftsmanship | Fable | High |
 | Complex engineering | Fable | High |
-| Independent code / design review | Opus 5.5 (`claude-opus-5-5`) | High |
+| Independent code / design review | Opus 5.5 | High |
 | Difficult debugging (after a first Fable attempt stalls) | Opus | High |
 | Child-safety and privacy evaluations | Opus | High |
-| Routine maintenance, minor fixes, straightforward content entry | Sonnet 5.5 (`claude-sonnet-5-5`) | Medium |
+| Routine maintenance, minor fixes, straightforward content entry | Sonnet 5.5 | Medium |
 
 ## Rules
 
