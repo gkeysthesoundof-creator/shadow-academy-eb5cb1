@@ -34,6 +34,10 @@ export const config = {
   // Assistant (Anthropic). Optional; local retrieval fallback otherwise.
   get anthropicApiKey() { return env('ANTHROPIC_API_KEY'); },
   get assistantModel() { return env('ASSISTANT_MODEL') ?? 'claude-haiku-5-5'; },
+  // Scout reader (turns posts/articles into cards). Runs only with ANTHROPIC_API_KEY + flag llm_extraction.
+  get extractModel() { return env('EXTRACT_MODEL') ?? 'claude-haiku-5-5'; },
+  get extractDailyBudgetMicros() { return Number(env('EXTRACT_DAILY_BUDGET_USD') ?? '0.5') * 1_000_000; },
+  get extractMaxCallsPerRun() { return Number(env('EXTRACT_MAX_CALLS_PER_RUN') ?? '150'); },
   get llmDailyBudgetMicros() { return Number(env('LLM_DAILY_BUDGET_USD') ?? '1') * 1_000_000; },
   // Reddit Data API (requires approved app + commercial agreement for paid product).
   get redditClientId() { return env('REDDIT_CLIENT_ID'); },

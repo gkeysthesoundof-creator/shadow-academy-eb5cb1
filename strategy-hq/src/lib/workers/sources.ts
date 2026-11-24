@@ -10,6 +10,8 @@ export const USER_AGENT = 'GameScoutHQ-OfficialWatch/0.2 (private fan companion;
 
 export interface FetchedItem {
   original_id: string | null; url: string; title: string; excerpt: string | null; published_at: string | null; content_hash: string;
+  /** Transient: full text handed to the reader during this run only. Never stored. */
+  body?: string; author?: string | null; spoiler?: boolean;
 }
 export interface AdapterResult {
   outcome: 'success' | 'partial' | 'failed' | 'blocked' | 'not_configured' | 'skipped';
@@ -115,12 +117,84 @@ export async function redditNew(subreddit: string, creds: { id?: string; secret?
       original_id: String(d.name ?? d.id ?? ''),
       url: `https://www.reddit.com${String(d.permalink ?? '')}`,
       title: String(d.title ?? '').slice(0, 300),
-      excerpt: d.selftext ? String(d.selftext).slice(0, 280) : null,      // short excerpt only
+      excerpt: d.selftext ? String(d.selftext).slice(0, 280) : null,      // short excerpt only is stored
+      body: String(d.selftext ?? '').slice(0, 20_000), author: d.author ? String(d.author) : null, spoiler: d.spoiler === true,
       published_at: d.created_utc ? new Date(Number(d.created_utc) * 1000).toISOString() : null,
       content_hash: hash(`${d.name}|${d.title}|${d.edited ?? ''}`),
-    }));
+    })).filter((_, i) => !(body.data?.children?.[i]?.data?.over_18));
     return { outcome: 'success', items, coverage_note: `Newest ${items.length} posts only (API page of 50). Not a complete review of the community.` };
   } catch (e) {
     return { outcome: 'failed', items: [], coverage_note: 'Reddit API unreachable.', error: (e as Error).message.slice(0, 300) };
+  }
+}
+
+
+/* ------------------------------ news & guide feeds ------------------------------ */
+
+export const GTA6_RE = /\b(gta\s?(vi|6)|grand theft auto (vi|6)|leonida)\b/i;
+const GUIDE_RE = /\b(where to find|location|locations|how to (get|find|unlock|make)|guide|best|all \d+|every|map|secret|easter egg|money|cash|weapon|gun|car|vehicle|stash|collectible)\b/i;
+
+function tag(xml: string, name: string): string | null {
+  const m = new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`, 'i').exec(xml);
+  if (!m) return null;
+  return decode(m[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, ' '));
+}
+
+export function parseFeed(xml: string): { title: string; link: string; published: string | null; description: string | null }[] {
+  const blocks = xml.match(/<item[\s>][\s\S]*?<\/item>|<entry[\s>][\s\S]*?<\/entry>/gi) ?? [];
+  return blocks.map((b) => {
+    const atomLink = /<link[^>]*href=["']([^"']+)["']/i.exec(b)?.[1];
+    return {
+      title: tag(b, 'title') ?? '',
+      link: (tag(b, 'link') || atomLink || '').trim(),
+      published: tag(b, 'pubDate') ?? tag(b, 'published') ?? tag(b, 'updated'),
+      description: tag(b, 'description') ?? tag(b, 'summary'),
+    };
+  }).filter((i) => i.title && /^https:\/\//.test(i.link));
+}
+
+/** Readable text of an article page (scripts, styles, nav and footer removed). */
+export function articleText(html: string): string {
+  const main = /<article[\s\S]*?<\/article>/i.exec(html)?.[0] ?? /<main[\s\S]*?<\/main>/i.exec(html)?.[0] ?? html;
+  return decode(main.replace(/<(script|style|nav|footer|header|aside|form)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<\/(p|li|h\d|tr|div)>/gi, '\n').replace(/<[^>]+>/g, ' ')).slice(0, 40_000);
+}
+
+/**
+ * News/guide feed: keep only GTA VI items; open the article page (robots.txt respected)
+ * only for items that look like practical guides, at most `maxArticles` per run.
+ */
+export async function feedWatch(url: string, fetcher: Fetcher, maxArticles = 8): Promise<AdapterResult> {
+  try {
+    const res = await fetcher(url, { headers: { 'user-agent': USER_AGENT, accept: 'application/rss+xml, application/atom+xml, text/xml' }, signal: AbortSignal.timeout(15_000) });
+    if (!res.ok) return { outcome: 'failed', items: [], coverage_note: `Feed returned HTTP ${res.status}.`, error: `HTTP ${res.status}` };
+    const entries = parseFeed((await res.text()).slice(0, 3_000_000)).filter((e) => GTA6_RE.test(`${e.title} ${e.description ?? ''}`));
+    const items: FetchedItem[] = [];
+    let opened = 0; let blocked = 0;
+    const robotsCache = new Map<string, string>();
+    for (const e of entries.slice(0, 40)) {
+      let body = e.description ?? '';
+      if (opened < maxArticles && GUIDE_RE.test(e.title)) {
+        const u = new URL(e.link);
+        if (!robotsCache.has(u.origin)) {
+          const r = await fetcher(`${u.origin}/robots.txt`, { headers: { 'user-agent': USER_AGENT }, signal: AbortSignal.timeout(8_000) }).catch(() => null);
+          robotsCache.set(u.origin, r && r.ok ? await r.text() : '');
+        }
+        if (robotsAllows(robotsCache.get(u.origin)!, u.pathname)) {
+          const a = await fetcher(e.link, { headers: { 'user-agent': USER_AGENT, accept: 'text/html' }, signal: AbortSignal.timeout(15_000) }).catch(() => null);
+          if (a && a.ok) { body = articleText(await a.text()); opened++; }
+        } else blocked++;
+      }
+      items.push({
+        original_id: null, url: e.link, title: e.title.slice(0, 300), excerpt: e.description ? e.description.slice(0, 280) : null,
+        published_at: e.published ? new Date(e.published).toISOString() : null, content_hash: hash(`${e.link}|${e.title}`), body,
+      });
+    }
+    return {
+      outcome: 'success', items,
+      coverage_note: `${entries.length} GTA VI item(s) in the feed; ${opened} guide article(s) read${blocked ? `, ${blocked} skipped by robots.txt` : ''}. Feeds show recent items only.`,
+    };
+  } catch (e) {
+    return { outcome: 'failed', items: [], coverage_note: 'Feed unreachable from the server.', error: (e as Error).message.slice(0, 300) };
   }
 }

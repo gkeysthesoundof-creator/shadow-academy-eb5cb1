@@ -15,6 +15,7 @@ const fetcher: Fetcher = async (url) => {
   if (url === LAUNCH) return new Response(html('Grand Theft Auto VI Now Available'), { status: 200 });
   if (url === ARTICLE) return new Response(html('Free bonus this week in GTA Online'), { status: 200 });
   if (url.includes('support.rockstargames.com')) return new Response('nope', { status: 500 });
+  if (!url.includes('rockstargames.com')) return new Response('not found', { status: 404 });   // news feeds unreachable in this test
   return new Response(html(`Rockstar page v${pageVersion}`, `content ${pageVersion} `.repeat(80)), { status: 200 });
 };
 
@@ -63,11 +64,12 @@ describe('shared scout pipeline', () => {
     expect(f.rows[0].last_confirmed_at).not.toBeNull();
   });
 
-  it('a new official article becomes an IN-REVIEW draft scoped to GTA Online — never auto-published, never shown to customers', async () => {
+  it('a new official article is published automatically, scoped to GTA Online, and never appears in GTA VI lists', async () => {
     const d = await asService((c) => c.query(`select f.publication_status, f.game_scope, f.verification from findings f join evidence e on e.finding_id = f.id where e.url = $1`, [ARTICLE]));
-    expect(d.rows[0]).toMatchObject({ publication_status: 'in_review', game_scope: 'GTA_ONLINE', verification: 'verified' }); // official + system-observed, still needs review
-    const visible = await asUser(A, (c) => c.query(`select 1 from findings f join evidence e on e.finding_id = f.id where e.url = $1`, [ARTICLE]));
-    expect(visible.rowCount).toBe(0);
+    expect(d.rows[0]).toMatchObject({ publication_status: 'published', game_scope: 'GTA_ONLINE', verification: 'verified' }); // official + observed by HQ
+    const { listFindings } = await import('@/lib/repo/intel');
+    const gta6 = await listFindings(A, { scope: 'GTA_VI' });
+    expect(gta6.map((f) => f.title).join(' ')).not.toMatch(/GTA Online/i);
   });
 
   it('an index page change is logged for review, not turned into intel', async () => {

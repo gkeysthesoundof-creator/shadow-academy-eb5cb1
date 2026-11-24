@@ -17,6 +17,8 @@ export const FLAGS: { key: string; enabled: boolean; locked: boolean; descriptio
   { key: 'llm_assistant', enabled: false, locked: false, description: 'Use the Anthropic API for assistant answers (needs ANTHROPIC_API_KEY; budget-capped).' },
   { key: 'reddit_ingestion', enabled: false, locked: false, description: 'Use the Reddit Data API (needs approved credentials; commercial use needs an agreement).' },
   { key: 'official_watch', enabled: true, locked: false, description: 'Watch official Rockstar pages for changes (robots.txt respected, link-out only).' },
+  { key: 'auto_publish_community', enabled: true, locked: false, description: 'Show scout finds immediately with honest evidence badges (single report / corroborated). Story spoilers of unknown chapter and low-confidence finds still wait in review.' },
+  { key: 'llm_extraction', enabled: true, locked: false, description: 'Let Claude Haiku read posts and guide articles into scout cards (needs ANTHROPIC_API_KEY; capped by EXTRACT_DAILY_BUDGET_USD). Without it, cards are built from post titles only.' },
 ];
 
 const ROCKSTAR_ARTICLE = 'https://www.rockstargames.com/newswire/article/39akk424a9oo53/grand-theft-auto-vi-now-available';
@@ -60,6 +62,8 @@ export async function seedReferenceData(c: Tx) {
     'Factual paraphrase + link-out only. No copying of art, screenshots, logos or full text. Fan-content policy is non-commercial; commercial reuse of protected material is NOT granted.');
   const mapRights = await rights('Official Leonida map download', 'personal_use', ['private'],
     'Personal download for your own reference. Redistribution/embedding in a commercial product NOT presumed.');
+  const feedRights = await rights('Gaming news & guide feeds', 'link_out_only', ['private'],
+    'Published feeds read for personal use: short paraphrased facts + link to the article. No copying of articles or images. Re-review before any commercial use.');
   const redditRights = await rights('Reddit content', 'unreviewed', [],
     'Reddit Data API terms apply. Commercial use requires a separate agreement with Reddit. Link-out only until approved.');
 
@@ -80,6 +84,18 @@ export async function seedReferenceData(c: Tx) {
     'Official launch announcement. Seed evidence for launch/map/expired promo items.', 'https://www.rockstargames.com/legal');
   await src('official_map', 'Official Leonida map (personal download)', 'https://www.rockstargames.com/VI#leonida-map', 'manual', false, 'needs_rights', mapRights,
     'Download it yourself and import privately in the Map Room. Not redistributed by this app.');
+  const FEEDS: [string, string][] = [
+    ['Rockstar Intel', 'https://www.rockstarintel.com/feed/'],
+    ['PC Gamer', 'https://www.pcgamer.com/rss/'],
+    ['Polygon', 'https://www.polygon.com/rss/index.xml'],
+    ['GameSpot', 'https://www.gamespot.com/feeds/mashup/'],
+    ['Game Rant', 'https://gamerant.com/feed/'],
+    ['IGN', 'https://feeds.feedburner.com/ign/all'],
+  ];
+  for (const [name, url] of FEEDS) {
+    await src('guide', `${name} (news & guides feed)`, url, 'rss', true, 'not_configured', feedRights,
+      'Only GTA VI items are kept; practical guide articles are read (robots.txt respected) and paraphrased with a link back. Feed address not yet confirmed from a live server.');
+  }
   for (const sub of ['GTA6', 'GTAVI', 'GrandTheftAutoVI', 'GTA6unmoderated', 'gtaglitches', 'grandtheftauto', 'rockstar']) {
     await src('reddit', `r/${sub}`, `https://www.reddit.com/r/${sub}/`, 'reddit_api', false, 'needs_credentials', redditRights,
       'Requires approved Reddit Data API credentials. Community existence/activity not yet verified by this system. Never scraped.',

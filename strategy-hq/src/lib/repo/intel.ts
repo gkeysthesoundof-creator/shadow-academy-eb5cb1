@@ -19,6 +19,7 @@ export interface FindingRow {
   landmark: string | null; region: string | null; place_id: string | null;
   pin_id: string | null; pin_precision: string | null;
   hunt_status: HuntStatus | null; evidence_count: number; scouts: ScoutId[];
+  source_label: string | null; has_official: boolean | null;
 }
 
 export const FILTERS = ['chapter', 'free', 'verified', 'precise', 'not_found', 'saved', 'patched', 'new24h'] as const;
@@ -35,6 +36,9 @@ const BASE_SELECT = `
     (select mp.precision from map_pins mp where mp.place_id = f.place_id limit 1) as pin_precision,
     h.status as hunt_status,
     (select count(*)::int from evidence e where e.finding_id = f.id and not e.contradicts) as evidence_count,
+    (select coalesce(s.name, e.independent_origin) from evidence e left join sources s on s.id = e.source_id
+       where e.finding_id = f.id and not e.contradicts order by e.captured_at limit 1) as source_label,
+    (select bool_or(e.evidence_type = 'official') from evidence e where e.finding_id = f.id) as has_official,
     coalesce((select array_agg(l.scout_id order by l.scout_id) from scout_finding_links l where l.finding_id = f.id), '{}') as scouts
   from findings f
   left join places p on p.id = f.place_id

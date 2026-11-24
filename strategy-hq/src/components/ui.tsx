@@ -31,10 +31,12 @@ export function FindingCard({ f, href }: { f: FindingRow; href?: string }) {
       </div>
       <div className="title">{f.title}</div>
       <p>{f.summary}</p>
+      {f.verification === 'single_report' && !f.has_official ? <p className="small" style={{ marginTop: 6, color: 'var(--gold)' }}>Unconfirmed community report — one source so far.</p> : null}
       <div className="row small muted" style={{ marginTop: 8 }}>
+        {f.source_label ? <span>via {f.source_label}{f.evidence_count > 1 ? ` +${f.evidence_count - 1}` : ''} ·</span> : null}
         <span>📍 {f.landmark ?? 'Landmark not verified'}</span>
         {payoutKnown ? <span>· 💵 {formatPayout(f.payout_min, f.payout_max)}</span> : null}
-        <span>· {f.evidence_count} source{f.evidence_count === 1 ? '' : 's'}</span>
+
       </div>
     </Link>
   );

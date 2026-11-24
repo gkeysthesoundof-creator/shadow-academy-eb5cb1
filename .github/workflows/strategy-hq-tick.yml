@@ -1,0 +1,22 @@
+name: strategy-hq scout tick
+# Free scheduler for the hosted app: calls /api/cron/tick hourly. The app decides
+# (in America/New_York time) whether to scan, refresh, or build the morning brief.
+# Inactive until the repository secrets HQ_URL and HQ_CRON_SECRET exist.
+# GitHub runs scheduled workflows from the default branch only.
+on:
+  schedule:
+    - cron: '7 * * * *'
+  workflow_dispatch:
+permissions: {}
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call the scheduler
+        env:
+          HQ_URL: ${{ secrets.HQ_URL }}
+          HQ_CRON_SECRET: ${{ secrets.HQ_CRON_SECRET }}
+        run: |
+          if [ -z "$HQ_URL" ] || [ -z "$HQ_CRON_SECRET" ]; then echo "Not configured yet; skipping."; exit 0; fi
+          curl -fsS --max-time 300 -H "Authorization: Bearer $HQ_CRON_SECRET" "$HQ_URL/api/cron/tick"

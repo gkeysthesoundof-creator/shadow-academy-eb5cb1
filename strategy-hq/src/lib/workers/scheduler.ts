@@ -8,7 +8,7 @@ import type { Fetcher } from './sources';
 /**
  * One tick of the server-side scheduler (Vercel Cron / Supabase pg_cron / GitHub
  * Actions call /api/cron/tick every 15 min, UTC). The tick itself decides, in
- * America/New_York wall-clock time, whether to scan (~7:15) or brief (~8:30).
+ * America/New_York wall-clock time, whether to scan (~7:15), brief (~8:30), or refresh (every 3 h, 6 AM–midnight).
  * Idempotency keys make overlapping/parallel ticks harmless.
  */
 export async function tick(opts: { now?: Date; fetcher?: Fetcher } = {}) {
@@ -39,6 +39,15 @@ export async function tick(opts: { now?: Date; fetcher?: Fetcher } = {}) {
     await asService((c) => c.query(`update ingestion_jobs set status = $2, finished_at = now(), summary = $3 where id = $1`,
       [claim.rows[0].id, failed ? 'partial' : 'succeeded', JSON.stringify({ users: out.length, failed })]));
     return { stage, localDate: date, result: { users: out.length, failed } };
+  }
+  // Intraday refresh: keep sections current — one extra scan per 3-hour block, 6 AM–midnight local.
+  const { hour } = localParts(now, tz);
+  const last = (await asService((c) => c.query(`select max(started_at) t from ingestion_jobs where kind in ('daily_scan','manual_refresh')`))).rows[0]?.t;
+  const stale = !last || now.getTime() - new Date(last).getTime() >= 3 * 3600_000 - 5 * 60_000;
+  if (hour >= 6 && state.scan && stale) {
+    const block = Math.floor(hour / 3);
+    const r = await runScoutPipeline({ kind: 'manual_refresh', idempotencyKey: `scan:${date}:${block}`, fetcher: opts.fetcher, now });
+    if (r.status !== 'skipped') return { stage: 'refresh' as const, localDate: date, result: { status: r.status, sources: r.sources.length } };
   }
   return { stage, localDate: date, result: {} };
 }

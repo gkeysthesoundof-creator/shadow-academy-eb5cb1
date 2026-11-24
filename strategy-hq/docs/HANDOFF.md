@@ -4,6 +4,18 @@
 development container (local Postgres 16, production Next.js build on localhost).
 No paid service, public registration, billing or outgoing email was activated.
 
+## 0. How the sections fill themselves (V2.1)
+The scouts populate the app on their own; you do not enter or upload intel.
+1. **Every 3 hours (6 AM–midnight ET)** one shared pass reads Rockstar's official pages, Reddit (official API) and GTA VI items from gaming news/guide feeds.
+2. **A reader turns each post or guide article into cards.** With an Anthropic key, Claude Haiku reads the full text; without one, a cautious rules reader builds a card from the post title.
+3. **Every fact is checked against the source text.** Payouts, locations, chapters and steps the source never stated are removed; an item the source never mentions is dropped.
+4. **Same thing at the same place = one card.** Each new independent source adds evidence and raises the badge: single report → corroborated → verified (official).
+5. **Cards publish immediately with honest badges.** Story spoilers of unknown chapter (and Reddit posts flagged as spoilers) stay hidden; GTA Online items never appear in GTA VI sections.
+6. Only a short excerpt of each post is stored, plus the paraphrased card and a link back to the source.
+
+Proven by a simulated morning (`tests/db/autopopulate.test.ts`): Vehicles, Weapons and Cash fill with no manual work; two posts about the same car merge into one corroborated card; an invented payout and an invented weapon are removed; spoiler, question and GTA Online posts stay out.
+**Not yet proven against live data**, because this build machine cannot reach Rockstar, Reddit or the news sites. The first hosted run is the real test.
+
 ## 1. Verified working (tests executed)
 | Area | Evidence |
 |---|---|
@@ -25,7 +37,7 @@ No paid service, public registration, billing or outgoing email was activated.
 | Admin | Launch phase, integration status (names only), scout ops + manual run, flags (locked ones unchangeable), sources, accounts/plans, usage & AI spend, review/intake, rights registry |
 | Phone UX | No horizontal scroll at 390px on 11 routes; nav targets ≥ 44px; offline playbook via service worker; reduced motion; Neon / Subtle / Velvet (red-black-white) themes |
 
-Totals: **105 unit/DB tests, 14 end-to-end tests, typecheck, lint and production build all pass.**
+Totals: **125 unit/DB tests, 14 end-to-end tests, typecheck, lint and production build all pass.**
 Screenshots: `docs/screenshots/iphone-*.jpg` (iPhone 13, 390×844 @3x) and `desktop-*.jpg` (1440 wide).
 Note: the iPhone screenshots are rendered with Chromium at the iPhone 13 viewport; Safari/WebKit was not available in the build container.
 
@@ -34,11 +46,12 @@ Note: the iPhone screenshots are rendered with Chromium at the iPhone 13 viewpor
 |---|---|---|
 | Hosting | Your Supabase + Vercel accounts (free tiers likely fit) | docs/DEPLOYMENT.md |
 | Morning email | Resend account, verified sending domain, `REPORT_*` vars, flag `email_delivery`, opt-in in Settings | Settings → Morning email |
+| News & guide feeds | Six feeds seeded (Rockstar Intel, PC Gamer, Polygon, GameSpot, Game Rant, IGN); addresses not yet confirmed from a live server | Source Monitor |
 | Rockstar official watch | Works in code; **this container's network blocks rockstargames.com**, so no live fetch has succeeded yet. Will run once deployed | Source Monitor |
 | Reddit communities | Approved Reddit Data API app + credentials; a **commercial agreement** before any paid launch. Never scraped | `.env`, flag `reddit_ingestion` |
 | AI coach | `ANTHROPIC_API_KEY` + flag `llm_assistant`. Model: Claude Haiku 5.5 (your choice), low effort, $1/day ceiling. A refusal falls back to free local search | `.env` |
 | Licensed Leonida map | Rockstar's map is for personal download; embedding/redistribution needs permission. Until then: personal import + text landmarks | Map Room |
-| Gameplay intel | No vehicle/weapon/cash/secret findings exist yet, and none were invented. Add them via Admin → Review & intake (evidence required) or let community sources feed the review queue | Admin |
+| Live community data | Fills automatically once hosted. Best results need Reddit access (Reddit reviews API requests) + an Anthropic key for the Haiku reader. News/guide feeds work without either | Source Monitor |
 | Billing | Choose a provider (e.g. Stripe), set prices, legal review. `billing_live` is locked off | Admin |
 | Private uploads in production | Move from local disk to Supabase Storage (private bucket) before serverless deploy | `api/uploads`, `api/screenshots` |
 | Brand | "GameScout HQ" trademark/domain clearance | — |
@@ -61,6 +74,7 @@ automatically the first time the deployed watcher fetches the official page itse
 
 ## 5. Costs (estimates — confirm current prices before buying anything)
 - Scouts: $0 model spend (deterministic). Hosting/database: free tiers expected at founder scale (unverified).
+- Scout reader (Haiku): capped at $0.50/day by default (≈$15/month worst case; typical use lower). Raise or lower with `EXTRACT_DAILY_BUDGET_USD`.
 - AI coach (optional): Haiku 5.5 is $0.10 per million input and $0.50 per million output tokens (prompts under 100K tokens).
   A typical answer of ~1.5k in / 400 out costs about $0.00035 — roughly 2,800 answers per $1. The `$1/day` ceiling
   stays as a safety net; per-plan daily quotas (FREE 5, PLUS 30, PRO 100) apply first.
@@ -69,7 +83,7 @@ automatically the first time the deployed watcher fetches the official page itse
 ## 6. Launch checklist (only your actions remain)
 1. Approve hosting; create Supabase + Vercel projects; set env vars (docs/DEPLOYMENT.md).
 2. Run migrations, seed, `founder:create` against Supabase.
-3. Set `CRON_SECRET`; confirm the cron runs (Admin → Scout operations shows a new run each morning).
+3. Set `CRON_SECRET`. Free scheduler: add repository secrets `HQ_URL` and `HQ_CRON_SECRET` on GitHub; the hourly workflow `.github/workflows/strategy-hq-tick.yml` then drives scans and the brief (scheduled workflows run from the default branch).
 4. Email: Resend domain + vars → dry run from Brief → turn on `email_delivery` → opt in.
 5. Optional: Anthropic key + `llm_assistant`; Reddit API app + `reddit_ingestion`.
 6. Add your first verified finds through Admin → Review & intake.

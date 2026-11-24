@@ -45,7 +45,7 @@ npm run dev                  # http://localhost:3100
 | Command | What it covers |
 |---|---|
 | `npm run typecheck`, `npm run lint` | TypeScript, ESLint |
-| `npm test` | 105 unit + database tests: RLS isolation, chapter leaks, evidence tiers, rights gate, rewards rules, cash/hour UNKNOWN, DST scheduler, pipeline idempotency/dedupe, brief leak test, email gates, billing webhooks, moderation, uploads, import/export, assistant fallbacks |
+| `npm test` | 125 unit + database tests: auto-population from Reddit + guide feeds (grounding, merging, spoiler holds), RLS isolation, chapter leaks, evidence tiers, rights gate, rewards rules, cash/hour UNKNOWN, DST scheduler, pipeline idempotency/dedupe, brief leak test, email gates, billing webhooks, moderation, uploads, import/export, assistant fallbacks |
 | `npm run test:e2e` | 14 Playwright tests at iPhone 13 size (390×844) against the production build |
 | `npm run screenshots` | Regenerates `docs/screenshots/` from the real app |
 

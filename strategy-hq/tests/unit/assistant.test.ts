@@ -5,7 +5,7 @@ import { buildLocalAnswer, keywordQuery, NO_MATCH_MESSAGE } from '@/lib/assistan
 import type { FindingRow } from '@/lib/repo/intel';
 
 const row = (id: string, title: string, over: Partial<FindingRow> = {}): FindingRow => ({
-  id, game_scope: 'GTA_VI', category: 'vehicle', title, summary: 'sum', why_it_matters: null, how_to: ['step one'], prerequisites: null, hazards: null,
+  id, game_scope: 'GTA_VI', category: 'vehicle', title, summary: 'sum', why_it_matters: null, source_label: null, has_official: null, how_to: ['step one'], prerequisites: null, hazards: null,
   risk: 'low', chapter_min: 1, chapter_max: null, spoiler_level: 'none', verification: 'verified', lifecycle: 'active', publication_status: 'published',
   is_free: null, payout_min: null, payout_max: null, price: null, availability: null, patch_version: null, attributes: {},
   first_seen_at: '', last_confirmed_at: null, last_checked_at: null, published_at: null, updated_at: '', landmark: 'Somewhere', region: null,
